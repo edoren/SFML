@@ -38,7 +38,10 @@ namespace sf
 {
 ////////////////////////////////////////////////////////////
 Clock::Clock() :
-m_startTime(priv::ClockImpl::getCurrentTime())
+m_startTime(priv::ClockImpl::getCurrentTime()),
+m_pauseTime(),
+m_timePaused(),
+m_running(true)
 {
 }
 
@@ -46,7 +49,10 @@ m_startTime(priv::ClockImpl::getCurrentTime())
 ////////////////////////////////////////////////////////////
 Time Clock::getElapsedTime() const
 {
-    return priv::ClockImpl::getCurrentTime() - m_startTime;
+    if (m_running)
+        return priv::ClockImpl::getCurrentTime() - m_startTime - m_timePaused;
+    else
+        return m_pauseTime - m_startTime - m_timePaused;
 }
 
 
@@ -54,10 +60,33 @@ Time Clock::getElapsedTime() const
 Time Clock::restart()
 {
     Time now = priv::ClockImpl::getCurrentTime();
-    Time elapsed = now - m_startTime;
+    Time elapsed = getElapsedTime();
     m_startTime = now;
+    m_pauseTime = now;
+    m_timePaused = sf::Time();
 
     return elapsed;
+}
+
+void Clock::start()
+{
+    if (!m_running)
+    {
+        Time now = priv::ClockImpl::getCurrentTime();
+        Time elapsedPause = now - m_pauseTime;
+        m_timePaused += elapsedPause;
+        m_running = true;
+    }
+}
+
+void Clock::stop()
+{
+    if (m_running)
+    {
+        Time now = priv::ClockImpl::getCurrentTime();
+        m_pauseTime = now;
+        m_running = false;
+    }
 }
 
 } // namespace sf
